@@ -166,18 +166,25 @@
 }
 
     function renderBanners(data) {
-      allBanners = data;
-      document.getElementById('loading').classList.add('hidden');
-      const grid = document.getElementById('bannerGrid');
-      grid.classList.remove('hidden');
+  // If data is wrapped in an object or null, fallback to empty array
+  allBanners = Array.isArray(data) ? data : (data.banners || []);
+  
+  document.getElementById('loading').classList.add('hidden');
+  const grid = document.getElementById('bannerGrid');
+  grid.classList.remove('hidden');
 
-      const sports = [...new Set(data.map(b => b.sport))].sort();
-      const sportSelect = document.getElementById('sportFilter');
-      sportSelect.innerHTML = '<option value="">All Sports</option>' + 
-        sports.map(s => `<option value="${s}">${s}</option>`).join('');
+  if (allBanners.length === 0) {
+    grid.innerHTML = '<p class="text-center col-span-full text-gray-500 py-8">No auction banners found.</p>';
+    return;
+  }
 
-      filterBanners();
-    }
+  const sports = [...new Set(allBanners.map(b => b.sport))].sort();
+  const sportSelect = document.getElementById('sportFilter');
+  sportSelect.innerHTML = '<option value="">All Sports</option>' + 
+    sports.map(s => `<option value="${s}">${s}</option>`).join('');
+
+  filterBanners();
+}
 
     function filterBanners() {
       const search = document.getElementById('searchInput').value.toLowerCase();
