@@ -156,11 +156,14 @@
     }
 
     function fetchBanners() {
-      fetch(GAS_API_URL)
-        .then(res => res.json())
-        .then(data => renderBanners(data))
-        .catch(err => alert("Error loading data: " + err));
-    }
+  fetch(GAS_API_URL, {
+    method: "GET",
+    redirect: "follow"
+  })
+  .then(res => res.json())
+  .then(data => renderBanners(data))
+  .catch(err => alert("Error loading data: " + err));
+}
 
     function renderBanners(data) {
       allBanners = data;
