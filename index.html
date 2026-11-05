@@ -39,12 +39,19 @@
     </div>
   </header>
 
-  <!-- Countdown Timer Banner -->
-  <div id="auctionBanner" class="bg-amber-400 text-evergreen-green font-bold text-center py-3 px-4 shadow-md flex flex-wrap items-center justify-center gap-3">
-    <span class="text-sm md:text-base">⏳ Auction Closes: <span id="auctionEndTimeText">Loading...</span></span>
-    <div id="timerContainer" class="bg-evergreen-green text-evergreen-gold px-3 py-1 rounded-md text-sm font-mono tracking-wide">
-      <span id="countdown">Calculating...</span>
+  <!-- Countdown Timer Banner & Info Notice -->
+  <div id="auctionBanner" class="bg-amber-400 text-evergreen-green font-bold text-center py-3 px-4 shadow-md flex flex-col items-center justify-center gap-2">
+    <div class="flex flex-wrap items-center justify-center gap-3">
+      <span class="text-sm md:text-base">⏳ Auction Closes: <span id="auctionEndTimeText">Loading...</span></span>
+      <div id="timerContainer" class="bg-evergreen-green text-evergreen-gold px-3 py-1 rounded-md text-sm font-mono tracking-wide">
+        <span id="countdown">Calculating...</span>
+      </div>
     </div>
+    
+    <!-- Info status notice -->
+    <p class="text-xs font-semibold text-emerald-950 opacity-90 mt-1">
+      ℹ️ High bids update automatically every 15 seconds. All bids must be placed in $5.00 increments.
+    </p>
   </div>
 
   <!-- Banner Grid -->
@@ -121,10 +128,13 @@
     let allBanners = [];
     let isAuctionEnded = false;
 
-    // Load data on start
+    // Load data on start & setup 15-second background auto-polling
     window.onload = function() {
       initCountdown();
       fetchBanners();
+
+      // Automatically refresh high bids every 15 seconds (15000ms)
+      setInterval(fetchBanners, 15000);
     };
 
     function initCountdown() {
@@ -156,35 +166,38 @@
     }
 
     function fetchBanners() {
-  fetch(GAS_API_URL, {
-    method: "GET",
-    redirect: "follow"
-  })
-  .then(res => res.json())
-  .then(data => renderBanners(data))
-  .catch(err => alert("Error loading data: " + err));
-}
+      fetch(GAS_API_URL, {
+        method: "GET",
+        redirect: "follow"
+      })
+      .then(res => res.json())
+      .then(data => renderBanners(data))
+      .catch(err => console.error("Error auto-polling banner data:", err));
+    }
 
     function renderBanners(data) {
-  // If data is wrapped in an object or null, fallback to empty array
-  allBanners = Array.isArray(data) ? data : (data.banners || []);
-  
-  document.getElementById('loading').classList.add('hidden');
-  const grid = document.getElementById('bannerGrid');
-  grid.classList.remove('hidden');
+      // If data is wrapped in an object or null, fallback to empty array
+      allBanners = Array.isArray(data) ? data : (data.banners || []);
+      
+      document.getElementById('loading').classList.add('hidden');
+      const grid = document.getElementById('bannerGrid');
+      grid.classList.remove('hidden');
 
-  if (allBanners.length === 0) {
-    grid.innerHTML = '<p class="text-center col-span-full text-gray-500 py-8">No auction banners found.</p>';
-    return;
-  }
+      if (allBanners.length === 0) {
+        grid.innerHTML = '<p class="text-center col-span-full text-gray-500 py-8">No auction banners found.</p>';
+        return;
+      }
 
-  const sports = [...new Set(allBanners.map(b => b.sport))].sort();
-  const sportSelect = document.getElementById('sportFilter');
-  sportSelect.innerHTML = '<option value="">All Sports</option>' + 
-    sports.map(s => `<option value="${s}">${s}</option>`).join('');
+      const sports = [...new Set(allBanners.map(b => b.sport))].sort();
+      const sportSelect = document.getElementById('sportFilter');
+      
+      // Retain active selection during auto-refresh
+      const currentSelectedSport = sportSelect.value;
+      sportSelect.innerHTML = '<option value="">All Sports</option>' + 
+        sports.map(s => `<option value="${s}" ${s === currentSelectedSport ? 'selected' : ''}>${s}</option>`).join('');
 
-  filterBanners();
-}
+      filterBanners();
+    }
 
     function filterBanners() {
       const search = document.getElementById('searchInput').value.toLowerCase();
@@ -255,7 +268,10 @@
       if (!banner) return;
 
       const currentBidNum = Number(banner.currentHighBid);
-      const nextMinBid = currentBidNum === 0 ? 5 : (Math.floor(currentBidNum / 5) + 1) * 5;
+      const minBidNum = Number(banner.minBid || 0);
+
+      // Next min bid calculation matching server rules
+      const nextMinBid = currentBidNum > 0 ? currentBidNum + 5 : minBidNum;
 
       document.getElementById('modalBannerId').value = banner.id;
       document.getElementById('modalTitle').innerText = `${banner.year} ${banner.sport}`;
@@ -318,7 +334,7 @@
           alertBox.innerText = res.message;
           
           submitBtn.classList.add('hidden');
-          fetchBanners(); 
+          fetchBanners(); // Immediate refresh upon successful bid
         } else {
           alertBox.classList.add('bg-red-100', 'text-red-700');
           alertBox.innerText = res.message;
