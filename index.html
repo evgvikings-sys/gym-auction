@@ -50,7 +50,7 @@
     
     <!-- Info status notice -->
     <p class="text-xs font-semibold text-emerald-950 opacity-90 mt-1">
-      ℹ️ High bids update automatically every 15 seconds. All bids must be placed in $5.00 increments.
+      ℹ️ High bids update automatically every 30 seconds. All bids must be placed in $5.00 increments.
     </p>
   </div>
 
@@ -134,7 +134,7 @@
       fetchBanners();
 
       // Automatically refresh high bids every 15 seconds (15000ms)
-      setInterval(fetchBanners, 15000);
+      setInterval(fetchBanners, 30000);
     };
 
     function initCountdown() {
